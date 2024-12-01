@@ -1,5 +1,8 @@
 """
 Webscraper.py
+
+TODO: Make it so that items that cannot be crafted (i.e. source items) are accounted for. Currently, the scraper throws
+    an error when they are pulled.
 """
 
 from bs4 import BeautifulSoup, NavigableString, ResultSet
@@ -11,7 +14,7 @@ from typing import Any
 
 class Webscraper:
     @staticmethod
-    def scrape_item_information(url: str) -> dict[str:str | float]:
+    def scrape_item_information(url: str) -> dict[str:str | float | int]:
         """
         Scrapes item information from the item's wiki page on satisfactory.wiki.gg.
         :param url: The item's URL on the wiki. Example: https://satisfactory.wiki.gg/wiki/Adaptive_Control_Unit.
@@ -45,24 +48,36 @@ class Webscraper:
         soup: BeautifulSoup = BeautifulSoup(response.content, "html.parser")
         page_aside: BeautifulSoup | NavigableString | None = soup.find("aside", class_="portable-infobox noexcerpt pi-background pi-theme-default pi-layout-default")
 
+        # I'm going to make this more readable later, but some items don't have every piece of information and this
+        # handles that.
+        information: list[str | float | int] = []
+
+        try:
+            information.insert(0, page_aside.find_all()[0].text)
+
+        except AttributeError:
+            information.insert(0, "<NameNotFound>")
+
+        try:
+            information.insert(1, comma_str_to_float(soup.find(string="Stack size").find_next().text))
+
+        except AttributeError:
+            information.insert(1, 1)
+
+        try:
+            information.insert(2, comma_str_to_float(soup.find(string="Sink points").find_next().text))
+
+        except AttributeError:
+            information.insert(2, 0)
+
         return {
-            "name": page_aside.find_all()[0].text,
-            "stack size": comma_str_to_float(soup.find(string="Stack size").find_next().text),
-            "sink points": comma_str_to_float(soup.find(string="Sink points").find_next().text)
+            "name": information[0],
+            "stack size": information[1],
+            "sink points": information[2]
         }
 
     @staticmethod
     def scrape_recipe_information(url: str):
-        response: Response = requests.get(url)
-        if response.status_code != 200:
-            raise TimeoutError(f"Failed to fetch {url}")
-
-        soup: BeautifulSoup = BeautifulSoup(response.content, "html.parser")
-        recipe_wiki_table = soup.find(id="Crafting").find_next("table")
-
-        dirty_recipe_table = []
-        recipes = {}
-
         def extract_recipe_items(item_cell: str) -> dict[str:dict[str:float]]:
             """
             Separates and organizes the information extracted regarding recipes.
@@ -70,14 +85,7 @@ class Webscraper:
             :return: The ingredient data, sorted.
             """
             # Splits each "informational item".
-            split_items = re.findall(r"\d*\D+", item_cell)
-            dirty_ingredients = []
-
-            # Gathers related items together.
-            for i in range(len(split_items)):
-                if i % 2 == 0:
-                    dirty_ingredients.append((split_items[i], split_items[i + 1]))
-
+            dirty_ingredients = re.findall(r"(\d+\.?\d*\s×\s[^0-9]+)(\d+\.?\d*\s/ min)", item_cell)
             clean_ingredients = {}
 
             for i, ii in dirty_ingredients:
@@ -118,7 +126,8 @@ class Webscraper:
 
             return facility_info
 
-        def rchop(name: str) -> str:
+        # There's probably a way to do this without creating a new function.
+        def chop_alternate(name: str) -> str:
             """
             Cuts off the "Alternate" that gets included in some recipe names when they're scraped from the wiki.
             :param name: The string to check.
@@ -131,40 +140,41 @@ class Webscraper:
 
             return result
 
+        response: Response = requests.get(url)
+        if response.status_code != 200:
+            raise TimeoutError(f"Failed to fetch {url}")
+
+        soup: BeautifulSoup = BeautifulSoup(response.content, "html.parser")
+        recipe_wiki_table = soup.find(id="Crafting").find_next("table")
+
+        web_table: list[list[str]] = []
+        recipes = {}
+
         if recipe_wiki_table:
             rows: ResultSet[Any] = recipe_wiki_table.find_all("tr")
 
             for row in rows:
                 cells = [cell.text.strip() for cell in row.find_all(['th', 'td'])]
-                dirty_recipe_table.append(cells)
+                web_table.append(cells)
 
-            # Removes the column headers.
-            dirty_recipe_table.pop(0)
+            # Since this variable is just a list with two lists inside it, we can "pop" the 0th index by just making
+            # the list equal to its 1st index. This also makes it so it's not a list with 1 item.
+            dirty_recipe_table: list[str] = web_table[1]
+            # Next, we remove the "unlocked by" column, since we don't need that.
+            dirty_recipe_table.pop(-1)
 
-            # Removes the "Unblocked by" column from each row.
-            for item in dirty_recipe_table:
-                item.pop(-1)
-
-            clean_recipe_table: list[list[str]] = []
+            clean_recipe_table: list[str] = []
 
             # Removes the regular expressions from the table.
-            for i in range(len(dirty_recipe_table)):
-                for info_item in dirty_recipe_table[i]:
-                    try:
-                        clean_recipe_table[i].append(re.sub(r"\xa0", " ", info_item))
+            for info_item in dirty_recipe_table:
+                clean_recipe_table.append(re.sub(r"\xa0", " ", info_item))
 
-                    except IndexError:
-                        clean_recipe_table.append([])
-                        clean_recipe_table[i].append(re.sub(r"\xa0", " ", info_item))
+            facility_info: list[str | float] = extract_facility_items(clean_recipe_table[2])
 
-            for recipe in clean_recipe_table:
-
-                facility_info: list[str | float] = extract_facility_items(recipe[2])
-
-                recipes[rchop(recipe[0])] = {
-                    "facility": {"name": facility_info[0], "time": facility_info[1]},
-                    "ingredients": extract_recipe_items(recipe[1]),
-                    "products": extract_recipe_items(recipe[3])
-                }
+            recipes[chop_alternate(clean_recipe_table[0])] = {
+                "facility": {"name": facility_info[0], "time": facility_info[1]},
+                "ingredients": extract_recipe_items(clean_recipe_table[1]),
+                "products": extract_recipe_items(clean_recipe_table[3])
+            }
 
             return recipes

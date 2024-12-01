@@ -165,8 +165,21 @@ recipes = []
 
 if __name__ == "__main__":
     for name, link in item_links.items():
-        items.append(Webscraper.scrape_item_information(link))
-        recipes.append(Webscraper.scrape_recipe_information(link))
+        # This exception handling is temporary. It just allows me to know which link is having the issue so I can adapt
+        # the tool.
+        try:
+            items.append(Webscraper.scrape_item_information(link))
+
+        except:
+            print(link)
+            items.append(Webscraper.scrape_item_information(link))
+
+        try:
+            recipes.append(Webscraper.scrape_recipe_information(link))
+
+        except:
+            print(link)
+            recipes.append(Webscraper.scrape_recipe_information(link))
 
     print(items)
     print(recipes)

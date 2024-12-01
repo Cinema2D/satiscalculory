@@ -2,7 +2,7 @@
 main.py
 """
 
-from satiscalculory.util.Webscraper import Webscraper
+from satiscalculory.util.SatisfactoryWikiPage import SatisfactoryWikiPage
 
 # I did this in a sort of unorthodox way with Excel. I've uploaded the Excel file to /util/other/ for edification.
 item_links: dict[str:str] = {
@@ -164,22 +164,13 @@ items = []
 recipes = []
 
 if __name__ == "__main__":
-    for name, link in item_links.items():
-        # This exception handling is temporary. It just allows me to know which link is having the issue so I can adapt
-        # the tool.
-        try:
-            items.append(Webscraper.scrape_item_information(link))
+    pages: list[SatisfactoryWikiPage] = []
 
-        except:
-            print(link)
-            items.append(Webscraper.scrape_item_information(link))
+    ai_limiter: SatisfactoryWikiPage = SatisfactoryWikiPage("https://satisfactory.wiki.gg/wiki/AI_Limiter")
+    print(ai_limiter.item.name)
+    print(ai_limiter.item.stack_size)
+    print(ai_limiter.item.sink_points)
+    print(ai_limiter.item.recipes)
 
-        try:
-            recipes.append(Webscraper.scrape_recipe_information(link))
-
-        except:
-            print(link)
-            recipes.append(Webscraper.scrape_recipe_information(link))
-
-    print(items)
-    print(recipes)
+    for link in item_links:
+        pass

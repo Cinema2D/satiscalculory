@@ -19,13 +19,17 @@ class Recipe:
         self.products: list[tuple[str, float]] = products
 
     @override
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         return(f"\n"
                f"{self.name}\n"
                f"| Ingredients\n"
                f"|| {self.ingredients}\n"
                f"| Products\n"
                f"|| {self.products}\n")
+
+    @override
+    def __repr__(self) -> str:
+        return f"{self.__class__}: {self.__dict__}"
 
     def add_ingredient(self, name: str, rate: float) -> None:
         for ingredient_name, _ in self.ingredients:

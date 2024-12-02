@@ -167,25 +167,30 @@ class Main:
     def __init__(self) -> None:
         self.pages: list[SatisfactoryWikiPage] = []
 
-        for item_name, link in self.item_links.items():
-            print(link)
-            self.pages.append(SatisfactoryWikiPage(link))
+        # for item_name, link in self.item_links.items():
+        #     print(link)
+        #     self.pages.append(SatisfactoryWikiPage(link))
+
+        # This is for debugging
+        self.pages.append(SatisfactoryWikiPage("https://satisfactory.wiki.gg/wiki/Screw"))
 
         connection: Connection = sqlite3.connect("satisfactory_items.sqlite")
         cursor: Cursor = connection.cursor()
 
         for page in self.pages:
-            cursor.execute(
-                "INSERT INTO items (name, stack_size, sink_points)"
-                "VALUES (?, ?, ?)",
-                (page.item.name, page.item.stack_size, page.item.sink_points)
-            )
+            # cursor.execute(
+            #     "INSERT INTO items (name, stack_size, sink_points)"
+            #     "VALUES (?, ?, ?)",
+            #     (page.item.name, page.item.stack_size, page.item.sink_points)
+            # )
 
-            cursor.execute(
-                "INSERT INTO recipes (name, ingredients, ingredient_rates, facility, facility_rates, products, product_rates, item)"
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-                ()
-            )
+            print(page.item.recipes)
+
+            # cursor.execute(
+            #     "INSERT INTO recipes (name, ingredients, ingredient_rates, facility, facility_rates, products, product_rates, item)"
+            #     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+            #     ()
+            # )
 
 
 if __name__ == "__main__":

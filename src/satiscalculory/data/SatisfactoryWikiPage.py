@@ -2,7 +2,7 @@
 SatisfactoryWikiPage.py
 """
 
-from bs4 import BeautifulSoup, NavigableString, ResultSet
+from bs4 import BeautifulSoup, NavigableString, ResultSet, Tag
 import re
 import requests
 from requests import Response
@@ -65,7 +65,12 @@ class SatisfactoryWikiPage:
 
         # STEP 2: Retrieve the item's recipes, if any, from the webpage.
         # raw_recipe_table is a mostly unreadable mess of data.
-        raw_recipe_table = self.soup.find(id="Crafting").find_next("table")
+        try:
+            raw_recipe_table: Tag | NavigableString | None = self.soup.find(id="Crafting").find_next("table")
+
+        except AttributeError:
+            raw_recipe_table = None
+
         recipe_table = []
 
         # Sorts the raw table into a more readable format that isn't necessarily usable yet.
@@ -117,9 +122,13 @@ class SatisfactoryWikiPage:
                     recipe[2] = recipe[2][:-len("Equipment Workshop")]
 
                 # Properly spaces and removes lettering.
-                recipe[2] = re.split(r"(?<=\d)(?=[a-zA-Z])|(?<=[a-zA-Z])(?=\d)", recipe[2])
-                recipe[2][1] = int(recipe[2][1][:-len("sec")].strip())
-                recipe[2] = tuple(recipe[2])
+                try:
+                    recipe[2] = re.split(r"(?<=\d)(?=[a-zA-Z])|(?<=[a-zA-Z])(?=\d)", recipe[2])
+                    recipe[2][1] = float(recipe[2][1][:-len("sec")].strip())
+                    recipe[2] = tuple(recipe[2])
+
+                except IndexError:
+                    recipe[2] = "MANUAL RECIPE"
 
                 # Does the exact same thing we did above with recipe[1].
                 recipe[3] = list(re.findall(r"(\d+\.?\d*\s×\s[^0-9]+)(\d+\.?\d*\s/ min)", recipe[3]))

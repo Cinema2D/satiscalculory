@@ -1,8 +1,10 @@
 """
 Main.py
 """
+import sqlite3
+from sqlite3 import Connection, Cursor
 
-from src.satiscalculory.data.SatisfactoryWikiPage import SatisfactoryWikiPage
+from satiscalculory.data.SatisfactoryWikiPage import SatisfactoryWikiPage
 
 
 class Main:
@@ -162,21 +164,29 @@ class Main:
         "Zipline": "https://satisfactory.wiki.gg/wiki/Zipline",
     }
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.pages: list[SatisfactoryWikiPage] = []
 
         for item_name, link in self.item_links.items():
             print(link)
             self.pages.append(SatisfactoryWikiPage(link))
 
-        print(self.pages)
+        connection: Connection = sqlite3.connect("satisfactory_items.sqlite")
+        cursor: Cursor = connection.cursor()
+
+        for page in self.pages:
+            cursor.execute(
+                "INSERT INTO items (name, stack_size, sink_points)"
+                "VALUES (?, ?, ?)",
+                (page.item.name, page.item.stack_size, page.item.sink_points)
+            )
+
+            cursor.execute(
+                "INSERT INTO recipes (name, ingredients, ingredient_rates, facility, facility_rates, products, product_rates, item)"
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+                ()
+            )
 
 
 if __name__ == "__main__":
    main: Main = Main()
-
-   for page in main.pages:
-       if page.item.name == "<ItemNameNotFound>":
-           print(page.url)
-
-       print(page.item)

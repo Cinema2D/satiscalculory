@@ -166,11 +166,6 @@ recipes = []
 if __name__ == "__main__":
     pages: list[SatisfactoryWikiPage] = []
 
-    ai_limiter: SatisfactoryWikiPage = SatisfactoryWikiPage("https://satisfactory.wiki.gg/wiki/AI_Limiter")
-    print(ai_limiter.item.name)
-    print(ai_limiter.item.stack_size)
-    print(ai_limiter.item.sink_points)
-    print(ai_limiter.item.recipes)
-
-    for link in item_links:
-        pass
+    for item_name, link in item_links.items():
+        print(link)
+        pages.append(SatisfactoryWikiPage(link))

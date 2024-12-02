@@ -12,6 +12,8 @@ from .SatisfactoryItem import SatisfactoryItem
 
 
 class SatisfactoryWikiPage:
+    # TODO: Currently, there's too much tuples being converted to lists and back. I need to figure out a better way of
+    #  doing this.
     def __init__(self, url: str) -> None:
         """
 
@@ -101,7 +103,9 @@ class SatisfactoryWikiPage:
                     # Keeps the name of the item only.
                     recipe[1][i][0] = recipe[1][i][0].split(" × ")[-1]
                     # Keeps the rate of the item only.
-                    recipe[1][i][1] = recipe[1][i][1].split(" / ")[0]
+                    recipe[1][i][1] = float(recipe[1][i][1].split(" / ")[0])
+                    # Converts it to a tuple since it doesn't need to be changed.
+                    recipe[1][i] = tuple(recipe[1][i])
 
                 # Removes any manual crafting facilities.
                 recipe[2] = recipe[2].split(" × ")[0]
@@ -114,26 +118,20 @@ class SatisfactoryWikiPage:
 
                 # Properly spaces and removes lettering.
                 recipe[2] = re.split(r"(?<=\d)(?=[a-zA-Z])|(?<=[a-zA-Z])(?=\d)", recipe[2])
-                recipe[2][1] = recipe[2][1][:-len("sec")].strip()
+                recipe[2][1] = int(recipe[2][1][:-len("sec")].strip())
+                recipe[2] = tuple(recipe[2])
 
                 # Does the exact same thing we did above with recipe[1].
                 recipe[3] = list(re.findall(r"(\d+\.?\d*\s×\s[^0-9]+)(\d+\.?\d*\s/ min)", recipe[3]))
 
                 for i in range(len(recipe[3])):
-                    # Converts it from a tuple to a list.
                     recipe[3][i] = list(recipe[3][i])
-
-                    # Keeps the name of the item only.
                     recipe[3][i][0] = recipe[3][i][0].split(" × ")[-1]
-                    # Keeps the rate of the item only.
-                    recipe[3][i][1] = recipe[3][i][1].split(" / ")[0]
+                    recipe[3][i][1] = float(recipe[3][i][1].split(" / ")[0])
+                    recipe[3][i] = tuple(recipe[3][i])
 
-
-            print("---RAW---")
-            print(raw_recipe_table)
-            print("\n")
-            print("---DIRTY---")
-            print(recipe_table)
+                # Creates recipes for these items and adds them to item.
+                self.item.add_recipe(recipe[0], recipe[1], recipe[2], recipe[3])
 
     @staticmethod
     def _float_str(text: str) -> float | bool:
